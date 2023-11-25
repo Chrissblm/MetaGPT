@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import streamlit as st
-from build_customized_multi_agents import main as run_agents
+from DevCode.build_customized_multi_agents import run_agents
 from startup import main as startup_main
 
 # Sidebar for selecting functionality
@@ -41,10 +41,6 @@ elif functionality == "Multi-Agent System":
 
 # ...
 
-# Button to run the multi-agent system asynchronously
-if st.button('Run Agents'):
-    # Run the main function from build_customized_multi_agents.py asynchronously
-    st.experimental_rerun(run_agents(idea=idea_input, investment=investment_input, n_round=n_round_input, add_human=add_human_input))
 # Input for user search query
 search_query = st.text_input("Enter your search query:")
 
