@@ -17,19 +17,18 @@ investment_input = st.number_input("Enter the investment amount for the agents:"
 n_round_input = st.number_input("Enter the number of rounds for the agents:", min_value=1, format="%i")
 add_human_input = st.checkbox("Add human to the team?")
 
-# Button to run the multi-agent system
-if st.button('Run Agents'):
-    # Run the main function from build_customized_multi_agents.py
-    run_agents(idea=idea_input, investment=investment_input, n_round=n_round_input, add_human=add_human_input)
-
-import asyncio
 
 # ...
 
+# Button to run the multi-agent system asynchronously
 if st.button('Run Agents'):
-    # Run the main function from build_customized_multi_agents.py
-    asyncio.run(run_agents(idea=idea_input, investment=investment_input, n_round=n_round_input, add_human=add_human_input))
-elif st.button('Search'):
+    # Run the main function from build_customized_multi_agents.py asynchronously
+    st.experimental_rerun(run_agents(idea=idea_input, investment=investment_input, n_round=n_round_input, add_human=add_human_input))
+# Input for user search query
+search_query = st.text_input("Enter your search query:")
+
+# Button to perform search
+if st.button('Search'):
     # Call search function with user query
     results = search(search_query)
     # Display results
