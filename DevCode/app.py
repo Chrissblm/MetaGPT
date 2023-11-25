@@ -1,5 +1,5 @@
 import streamlit as st
-from startup import main
+from examples.build_customized_multi_agents import main as run_agents
 
 st.title('MetaGPT Startup Interface')
 
@@ -11,12 +11,24 @@ code_review = st.checkbox("Use code review?")
 run_tests = st.checkbox("Run tests?")
 implement = st.checkbox("Implement?")
 
-# Input for search query
-search_query = st.text_input("Enter your search query:")
+# Input for multi-agent system parameters
+idea_input = st.text_input("Enter your idea for the agents to work on:")
+investment_input = st.number_input("Enter the investment amount for the agents:", min_value=0.0)
+n_round_input = st.number_input("Enter the number of rounds for the agents:", min_value=1, format="%i")
+add_human_input = st.checkbox("Add human to the team?")
 
-if st.button('Start Startup'):
-    # Call main function with user parameters
-    main(idea, investment, n_round, code_review, run_tests, implement)
+# Button to run the multi-agent system
+if st.button('Run Agents'):
+    # Run the main function from build_customized_multi_agents.py
+    run_agents(idea=idea_input, investment=investment_input, n_round=n_round_input, add_human=add_human_input)
+
+import asyncio
+
+# ...
+
+if st.button('Run Agents'):
+    # Run the main function from build_customized_multi_agents.py
+    asyncio.run(run_agents(idea=idea_input, investment=investment_input, n_round=n_round_input, add_human=add_human_input))
 elif st.button('Search'):
     # Call search function with user query
     results = search(search_query)
