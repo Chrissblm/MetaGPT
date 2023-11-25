@@ -133,7 +133,7 @@ class SimpleReviewer(Role):
         self._watch([SimpleWriteTest])
 
 
-async def main(
+async def run_agents(
     idea: str = "write a function that calculates the product of a list",
     investment: float = 3.0,
     n_round: int = 5,
@@ -154,5 +154,3 @@ async def main(
     team.start_project(idea)
     await team.run(n_round=n_round)
 
-if __name__ == '__main__':
-    fire.Fire(main)
