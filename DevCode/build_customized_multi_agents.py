@@ -1,8 +1,3 @@
-'''
-Filename: MetaGPT/examples/build_customized_multi_agents.py
-Created Date: Wednesday, November 15th 2023, 7:12:39 pm
-Author: garylin2099
-'''
 import re
 import asyncio
 import fire
@@ -154,5 +149,3 @@ async def main(
     team.start_project(idea)
     await team.run(n_round=n_round)
 
-if __name__ == '__main__':
-    fire.Fire(main)
