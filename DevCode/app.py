@@ -1,5 +1,5 @@
 import streamlit as st
-from examples.build_customized_multi_agents import main as run_agents
+from DevCode.build_customized_multi_agents import main as run_agents
 
 st.title('MetaGPT Startup Interface')
 
