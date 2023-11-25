@@ -1,11 +1,5 @@
-'''
-Filename: MetaGPT/examples/build_customized_multi_agents.py
-Created Date: Wednesday, November 15th 2023, 7:12:39 pm
-Author: garylin2099
-'''
 import re
 import asyncio
-import fire
 
 from metagpt.llm import LLM
 from metagpt.actions import Action, BossRequirement
