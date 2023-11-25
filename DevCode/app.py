@@ -23,8 +23,8 @@ if functionality == "Startup":
     implement = st.checkbox("Implement?")
 
     if st.button('Run Startup'):
-        # Run the startup function asynchronously
-        st.experimental_rerun(startup_main(idea=idea, investment=investment, n_round=n_round, code_review=code_review, run_tests=run_tests, implement=implement))
+        # Run the startup function
+        asyncio.run(startup_main(idea=idea, investment=investment, n_round=n_round, code_review=code_review, run_tests=run_tests, implement=implement))
 
 elif functionality == "Multi-Agent System":
     # Input for multi-agent system parameters
@@ -34,8 +34,8 @@ elif functionality == "Multi-Agent System":
     add_human_input = st.checkbox("Add human to the team?")
 
     if st.button('Run Agents'):
-        # Run the multi-agent system function asynchronously
-        st.experimental_rerun(run_agents(idea=idea_input, investment=investment_input, n_round=n_round_input, add_human=add_human_input))
+        # Run the multi-agent system function
+        asyncio.run(run_agents(idea=idea_input, investment=investment_input, n_round=n_round_input, add_human=add_human_input))
 
 # Input for user parameters
 idea = st.text_input("Enter your startup idea:")
