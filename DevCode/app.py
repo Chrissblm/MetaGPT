@@ -38,7 +38,7 @@ elif functionality == "Multi-Agent System":
         asyncio.create_task(run_agents(idea=idea_input, investment=investment_input, n_round=n_round_input, add_human=add_human_input))
 
 # Input for user parameters
-idea = st.text_input("Enter your startup idea:")
+idea = st.text_input("Enter your startup idea:", key="startup_idea")
 investment = st.number_input("Enter your investment amount:", min_value=0.0)
 n_round = st.number_input("Enter number of rounds:", min_value=1, format="%i")
 code_review = st.checkbox("Use code review?")
@@ -46,7 +46,7 @@ run_tests = st.checkbox("Run tests?")
 implement = st.checkbox("Implement?")
 
 # Input for multi-agent system parameters
-idea_input = st.text_input("Enter your idea for the agents to work on:")
+idea_input = st.text_input("Enter your idea for the agents to work on:", key="agents_idea")
 investment_input = st.number_input("Enter the investment amount for the agents:", min_value=0.0)
 n_round_input = st.number_input("Enter the number of rounds for the agents:", min_value=1, format="%i")
 add_human_input = st.checkbox("Add human to the team?")
