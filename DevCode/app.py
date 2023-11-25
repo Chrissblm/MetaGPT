@@ -1,5 +1,8 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import streamlit as st
-from DevCode.build_customized_multi_agents import main as run_agents
+from build_customized_multi_agents import main as run_agents
 
 st.title('MetaGPT Startup Interface')
 
