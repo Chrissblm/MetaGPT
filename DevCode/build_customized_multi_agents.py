@@ -1,6 +1,5 @@
 import re
 import asyncio
-import fire
 
 from metagpt.llm import LLM
 from metagpt.actions import Action, BossRequirement
