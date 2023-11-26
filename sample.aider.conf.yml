@@ -1,0 +1,54 @@
+# conda env create -f .conda/.aider.conf.yml
+# Aider Configuration File
+
+# Specify the OpenAI API key
+openai-api-key: ""
+
+# Main settings
+model: "gpt-4-1106-preview"
+# skip-model-availability-check: False
+# voice-language: "auto"
+
+# # Advanced Model Settings
+# openai-api-base: "https://api.openai.com/v1"
+# openai-api-type: "your_api_type_here"
+# openai-api-version: "your_api_version_here"
+# openai-api-deployment-id: "your_deployment_id_here"
+# openai-api-engine: "your_engine_here"
+# edit-format: "your_edit_format_here"
+# map-tokens: 1024
+
+# # History Files
+# input-history-file: ".aider.input.history"
+# chat-history-file: ".aider.chat.history.md"
+
+# # Output Settings
+# dark-mode: False
+# light-mode: False
+# pretty: True
+# stream: True
+# user-input-color: "#00cc00"
+# tool-output-color: "your_tool_output_color_here"
+# tool-error-color: "red"
+# assistant-output-color: "#0088ff"
+# code-theme: "default"
+# show-diffs: False
+
+# # Git Settings
+# git: True
+# gitignore: True
+# aiderignore: ".aiderignore"
+# auto-commits: True
+# dirty-commits: True
+# dry-run: False
+# commit: False
+
+# # Other Settings
+# version: False
+# apply: "your_file_here"
+# yes: False
+# verbose: False
+show-repo-map: True
+# message: "your_message_here"
+# encoding: "utf-8"
+# config-file: ".aider.conf.yml"
