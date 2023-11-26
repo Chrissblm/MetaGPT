@@ -21,3 +21,6 @@ python setup.py install
 python startup.py "Write a cli snake game based on pygame" # optional --code_review True (better code, costs more)
 # if you get ModuleNotFoundError: No module named 'bs4’, run "python -m pip install bs4"
 python startup.py "Write a cli snake game based on pygame" # do this again if you got the ModuleNotFoundError
+
+
+ctags -R --exclude=node_modules --exclude=venv --exclude=build --exclude=.devcontainer

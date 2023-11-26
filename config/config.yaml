@@ -1,4 +1,4 @@
-#  --openai-api-key=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 --model "gpt-4-1106-preview"
+#  --openai-api-key=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 --model "gpt-4-1106-preview"
 
 # DO NOT MODIFY THIS FILE, create a new key.yaml, define OPENAI_API_KEY.
 # The configuration of key.yaml has a higher priority and will not enter git
