@@ -41,7 +41,8 @@ class Config(metaclass=Singleton):
     def __init__(self, yaml_file=default_yaml_file):
         self._configs = {}
         self._init_with_config_files_and_env(self._configs, yaml_file)
-        logger.info("Config loading done.")
+        logger.info(f"Config loading from file: {yaml_file}")
+        logger.debug(f"Loaded configuration: {self._configs}")
         self.global_proxy = self._get("GLOBAL_PROXY")
         self.openai_api_key = self._get("OPENAI_API_KEY")
         self.anthropic_api_key = self._get("Anthropic_API_KEY")
