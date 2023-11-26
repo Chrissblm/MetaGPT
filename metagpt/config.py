@@ -46,10 +46,15 @@ class Config(metaclass=Singleton):
         self.openai_api_key = self._get("OPENAI_API_KEY")
         self.anthropic_api_key = self._get("Anthropic_API_KEY")
         self.zhipuai_api_key = self._get("ZHIPUAI_API_KEY")
-        if (not self.openai_api_key or "YOUR_API_KEY" == self.openai_api_key) and \
-                (not self.anthropic_api_key or "YOUR_API_KEY" == self.anthropic_api_key) and \
-                (not self.zhipuai_api_key or "YOUR_API_KEY" == self.zhipuai_api_key):
-            raise NotConfiguredException("Set OPENAI_API_KEY or Anthropic_API_KEY or ZHIPUAI_API_KEY first")
+        # Check if any API key is set, otherwise provide instructions on how to set them.
+        api_keys = {
+            'OPENAI_API_KEY': self.openai_api_key,
+            'Anthropic_API_KEY': self.anthropic_api_key,
+            'ZHIPUAI_API_KEY': self.zhipuai_api_key
+        }
+        if all(key is None or key == "YOUR_API_KEY" for key in api_keys.values()):
+            missing_keys = ', '.join(api_keys.keys())
+            raise NotConfiguredException(f"None of the API keys are set. Please set one of the following API keys in your environment or config file: {missing_keys}")
         self.openai_api_base = self._get("OPENAI_API_BASE")
         openai_proxy = self._get("OPENAI_PROXY") or self.global_proxy
         if openai_proxy:
