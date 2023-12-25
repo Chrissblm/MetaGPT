@@ -10,10 +10,10 @@
 ## Or, you can configure OPENAI_PROXY to access official OPENAI_BASE_URL.
 OPENAI_BASE_URL: "https://api.openai.com/v1"
 #OPENAI_PROXY: "http://127.0.0.1:8118"
-#OPENAI_API_KEY: "YOUR_API_KEY"  # set the value to sk-xxx if you host the openai interface for open llm model
+OPENAI_API_KEY: "sk-naz4t"  # set the value to sk-xxx if you host the openai interface for open llm model
 OPENAI_API_MODEL: "gpt-4-1106-preview"
 MAX_TOKENS: 4096
-RPM: 10
+RPM: 100
 
 #### if Spark
 #SPARK_APPID : "YOUR_APPID"
@@ -73,11 +73,11 @@ RPM: 10
 ## Supported values: playwright/selenium
 #WEB_BROWSER_ENGINE: playwright
 
-## Supported values: chromium/firefox/webkit, visit https://playwright.dev/python/docs/api/class-browsertype
-##PLAYWRIGHT_BROWSER_TYPE: chromium
+#Supported values: chromium/firefox/webkit, visit https://playwright.dev/python/docs/api/class-browsertype
+PLAYWRIGHT_BROWSER_TYPE: chromium
 
 ## Supported values: chrome/firefox/edge/ie, visit https://www.selenium.dev/documentation/webdriver/browsers/
-# SELENIUM_BROWSER_TYPE: chrome
+#SELENIUM_BROWSER_TYPE: chrome
 
 #### for TTS
 
@@ -90,7 +90,7 @@ RPM: 10
 #SD_T2I_API: "/sdapi/v1/txt2img"
 
 #### for Execution
-#LONG_TERM_MEMORY: false
+LONG_TERM_MEMORY: true
 
 #### for Mermaid CLI
 ## If you installed mmdc (Mermaid CLI) only for metagpt then enable the following configuration.
@@ -102,12 +102,12 @@ RPM: 10
 # CALC_USAGE: false
 
 ### for Research
-# MODEL_FOR_RESEARCHER_SUMMARY: gpt-3.5-turbo
-# MODEL_FOR_RESEARCHER_REPORT: gpt-3.5-turbo-16k
+#MODEL_FOR_RESEARCHER_SUMMARY: gpt-3.5-turbo
+#MODEL_FOR_RESEARCHER_REPORT: gpt-3.5-turbo-16k
 
 ### choose the engine for mermaid conversion, 
 # default is nodejs, you can change it to playwright,pyppeteer or ink
-# MERMAID_ENGINE: nodejs
+MERMAID_ENGINE: nodejs
 
 ### browser path for pyppeteer engine, support Chrome, Chromium,MS Edge
 #PYPPETEER_EXECUTABLE_PATH: "/usr/bin/google-chrome-stable"
