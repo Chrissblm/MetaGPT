@@ -159,3 +159,6 @@ workspace/*
 tmp
 metagpt/roles/idea_agent.py
 .aider*
+config/config.yaml
+config/readme.md
+README.md
