@@ -162,6 +162,7 @@ metagpt/roles/idea_agent.py
 config/config.yaml
 config/readme.md
 README.md
-config/config.yaml
+/config/config.yaml
 README.md
 NOTES.md
+*config.yaml
