@@ -48,10 +48,12 @@ def get_metagpt_root():
 
 # METAGPT PROJECT ROOT AND VARS
 
-METAGPT_ROOT = get_metagpt_root()
+METAGPT_ROOT = get_metagpt_root()  # Dependent on METAGPT_PROJECT_ROOT
 DEFAULT_WORKSPACE_ROOT = METAGPT_ROOT / "workspace"
 
+EXAMPLE_PATH = METAGPT_ROOT / "examples"
 DATA_PATH = METAGPT_ROOT / "data"
+TEST_DATA_PATH = METAGPT_ROOT / "tests/data"
 RESEARCH_PATH = DATA_PATH / "research"
 TUTORIAL_PATH = DATA_PATH / "tutorial_docx"
 INVOICE_OCR_TABLE_PATH = DATA_PATH / "invoice_table"
@@ -85,22 +87,50 @@ MESSAGE_ROUTE_TO_NONE = "<none>"
 REQUIREMENT_FILENAME = "requirement.txt"
 BUGFIX_FILENAME = "bugfix.txt"
 PACKAGE_REQUIREMENTS_FILENAME = "requirements.txt"
+CODE_PLAN_AND_CHANGE_FILENAME = "code_plan_and_change.json"
 
 DOCS_FILE_REPO = "docs"
 PRDS_FILE_REPO = "docs/prds"
 SYSTEM_DESIGN_FILE_REPO = "docs/system_design"
 TASK_FILE_REPO = "docs/tasks"
+CODE_PLAN_AND_CHANGE_FILE_REPO = "docs/code_plan_and_change"
 COMPETITIVE_ANALYSIS_FILE_REPO = "resources/competitive_analysis"
 DATA_API_DESIGN_FILE_REPO = "resources/data_api_design"
 SEQ_FLOW_FILE_REPO = "resources/seq_flow"
 SYSTEM_DESIGN_PDF_FILE_REPO = "resources/system_design"
 PRD_PDF_FILE_REPO = "resources/prd"
 TASK_PDF_FILE_REPO = "resources/api_spec_and_tasks"
+CODE_PLAN_AND_CHANGE_PDF_FILE_REPO = "resources/code_plan_and_change"
 TEST_CODES_FILE_REPO = "tests"
 TEST_OUTPUTS_FILE_REPO = "test_outputs"
 CODE_SUMMARIES_FILE_REPO = "docs/code_summaries"
 CODE_SUMMARIES_PDF_FILE_REPO = "resources/code_summaries"
+RESOURCES_FILE_REPO = "resources"
+SD_OUTPUT_FILE_REPO = "resources/SD_Output"
+GRAPH_REPO_FILE_REPO = "docs/graph_repo"
+CLASS_VIEW_FILE_REPO = "docs/class_views"
 
 YAPI_URL = "http://yapi.deepwisdomai.com/"
 
+DEFAULT_LANGUAGE = "English"
+DEFAULT_MAX_TOKENS = 1500
+COMMAND_TOKENS = 500
+BRAIN_MEMORY = "BRAIN_MEMORY"
+SKILL_PATH = "SKILL_PATH"
+SERPER_API_KEY = "SERPER_API_KEY"
+DEFAULT_TOKEN_SIZE = 500
+
+# format
+BASE64_FORMAT = "base64"
+
+# REDIS
+REDIS_KEY = "REDIS_KEY"
 LLM_API_TIMEOUT = 300
+
+# Message id
+IGNORED_MESSAGE_ID = "0"
+
+# Class Relationship
+GENERALIZATION = "Generalize"
+COMPOSITION = "Composite"
+AGGREGATION = "Aggregate"

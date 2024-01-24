@@ -55,6 +55,7 @@ class FileRepository:
         """
         pathname = self.workdir / filename
         pathname.parent.mkdir(parents=True, exist_ok=True)
+        content = content if content else ""  # avoid `argument must be str, not None` to make it continue
         async with aiofiles.open(str(pathname), mode="w") as writer:
             await writer.write(content)
         logger.info(f"save to: {str(pathname)}")
@@ -81,10 +82,11 @@ class FileRepository:
         :return: List of changed dependency filenames or paths.
         """
         dependencies = await self.get_dependency(filename=filename)
-        changed_files = self.changed_files
+        changed_files = set(self.changed_files.keys())
         changed_dependent_files = set()
         for df in dependencies:
-            if df in changed_files.keys():
+            rdf = Path(df).relative_to(self._relative_path)
+            if str(rdf) in changed_files:
                 changed_dependent_files.add(df)
         return changed_dependent_files
 
@@ -137,6 +139,8 @@ class FileRepository:
         files = self._git_repo.changed_files
         relative_files = {}
         for p, ct in files.items():
+            if ct.value == "D":  # deleted
+                continue
             try:
                 rf = Path(p).relative_to(self._relative_path)
             except ValueError:

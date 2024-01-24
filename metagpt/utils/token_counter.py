@@ -27,7 +27,8 @@ TOKEN_COSTS = {
     "gpt-4-0613": {"prompt": 0.06, "completion": 0.12},
     "gpt-4-1106-preview": {"prompt": 0.01, "completion": 0.03},
     "text-embedding-ada-002": {"prompt": 0.0004, "completion": 0.0},
-    "chatglm_turbo": {"prompt": 0.0, "completion": 0.00069},  # 32k version, prompt + completion tokens=0.005￥/k-tokens
+    "glm-3-turbo": {"prompt": 0.0, "completion": 0.0007},  # 128k version, prompt + completion tokens=0.005￥/k-tokens
+    "glm-4": {"prompt": 0.0, "completion": 0.014},  # 128k version, prompt + completion tokens=0.1￥/k-tokens
     "gemini-pro": {"prompt": 0.00025, "completion": 0.0005},
 }
 
@@ -84,6 +85,13 @@ def count_message_tokens(messages, model="gpt-3.5-turbo-0613"):
     elif "gpt-4" == model:
         print("Warning: gpt-4 may update over time. Returning num tokens assuming gpt-4-0613.")
         return count_message_tokens(messages, model="gpt-4-0613")
+    elif "open-llm-model" == model:
+        """
+        For self-hosted open_llm api, they include lots of different models. The message tokens calculation is
+        inaccurate. It's a reference result.
+        """
+        tokens_per_message = 0  # ignore conversation message template prefix
+        tokens_per_name = 0
     else:
         raise NotImplementedError(
             f"num_tokens_from_messages() is not implemented for model {model}. "
@@ -112,7 +120,11 @@ def count_string_tokens(string: str, model_name: str) -> int:
     Returns:
         int: The number of tokens in the text string.
     """
-    encoding = tiktoken.encoding_for_model(model_name)
+    try:
+        encoding = tiktoken.encoding_for_model(model_name)
+    except KeyError:
+        print("Warning: model not found. Using cl100k_base encoding.")
+        encoding = tiktoken.get_encoding("cl100k_base")
     return len(encoding.encode(string))
 
 

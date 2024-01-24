@@ -16,13 +16,13 @@
             class.
 """
 import subprocess
+from pathlib import Path
 from typing import Tuple
 
 from pydantic import Field
 
 from metagpt.actions.action import Action
 from metagpt.config import CONFIG
-from metagpt.llm import LLM, BaseGPTAPI
 from metagpt.logs import logger
 from metagpt.schema import RunCodeContext, RunCodeResult
 from metagpt.utils.exceptions import handle_exception
@@ -79,14 +79,15 @@ standard errors:
 class RunCode(Action):
     name: str = "RunCode"
     context: RunCodeContext = Field(default_factory=RunCodeContext)
-    llm: BaseGPTAPI = Field(default_factory=LLM)
 
     @classmethod
-    @handle_exception
     async def run_text(cls, code) -> Tuple[str, str]:
-        # We will document_store the result in this dictionary
-        namespace = {}
-        exec(code, namespace)
+        try:
+            # We will document_store the result in this dictionary
+            namespace = {}
+            exec(code, namespace)
+        except Exception as e:
+            return "", str(e)
         return namespace.get("result", ""), ""
 
     @classmethod
@@ -152,11 +153,23 @@ class RunCode(Action):
         return subprocess.run(cmd, check=check, cwd=cwd, env=env)
 
     @staticmethod
-    def _install_dependencies(working_directory, env):
+    def _install_requirements(working_directory, env):
+        file_path = Path(working_directory) / "requirements.txt"
+        if not file_path.exists():
+            return
+        if file_path.stat().st_size == 0:
+            return
         install_command = ["python", "-m", "pip", "install", "-r", "requirements.txt"]
         logger.info(" ".join(install_command))
         RunCode._install_via_subprocess(install_command, check=True, cwd=working_directory, env=env)
 
+    @staticmethod
+    def _install_pytest(working_directory, env):
         install_pytest_command = ["python", "-m", "pip", "install", "pytest"]
         logger.info(" ".join(install_pytest_command))
         RunCode._install_via_subprocess(install_pytest_command, check=True, cwd=working_directory, env=env)
+
+    @staticmethod
+    def _install_dependencies(working_directory, env):
+        RunCode._install_requirements(working_directory, env)
+        RunCode._install_pytest(working_directory, env)

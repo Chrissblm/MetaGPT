@@ -10,14 +10,9 @@
 
 from typing import Optional
 
-from pydantic import Field
-
 from metagpt.actions.action import Action
-from metagpt.config import CONFIG
 from metagpt.const import TEST_CODES_FILE_REPO
-from metagpt.llm import LLM
 from metagpt.logs import logger
-from metagpt.provider.base_gpt_api import BaseGPTAPI
 from metagpt.schema import Document, TestingContext
 from metagpt.utils.common import CodeParser
 
@@ -44,8 +39,7 @@ you should correctly import the necessary classes based on these file locations!
 
 class WriteTest(Action):
     name: str = "WriteTest"
-    context: Optional[str] = None
-    llm: BaseGPTAPI = Field(default_factory=LLM)
+    context: Optional[TestingContext] = None
 
     async def write_code(self, prompt):
         code_rsp = await self._aask(prompt)
@@ -65,11 +59,12 @@ class WriteTest(Action):
             self.context.test_doc = Document(
                 filename="test_" + self.context.code_doc.filename, root_path=TEST_CODES_FILE_REPO
             )
+        fake_root = "/data"
         prompt = PROMPT_TEMPLATE.format(
             code_to_test=self.context.code_doc.content,
             test_file_name=self.context.test_doc.filename,
-            source_file_path=self.context.code_doc.root_relative_path,
-            workspace=CONFIG.git_repo.workdir,
+            source_file_path=fake_root + "/" + self.context.code_doc.root_relative_path,
+            workspace=fake_root,
         )
         self.context.test_doc.content = await self.write_code(prompt)
         return self.context

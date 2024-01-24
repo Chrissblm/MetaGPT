@@ -20,30 +20,41 @@
 from __future__ import annotations
 
 import json
+import os
 from collections import defaultdict
 from pathlib import Path
-from typing import Set
+from typing import Literal, Set
 
 from metagpt.actions import Action, WriteCode, WriteCodeReview, WriteTasks
 from metagpt.actions.fix_bug import FixBug
+from metagpt.actions.project_management_an import REFINED_TASK_LIST, TASK_LIST
 from metagpt.actions.summarize_code import SummarizeCode
+from metagpt.actions.write_code_plan_and_change_an import WriteCodePlanAndChange
 from metagpt.config import CONFIG
 from metagpt.const import (
+    CODE_PLAN_AND_CHANGE_FILE_REPO,
+    CODE_PLAN_AND_CHANGE_FILENAME,
+    CODE_PLAN_AND_CHANGE_PDF_FILE_REPO,
     CODE_SUMMARIES_FILE_REPO,
     CODE_SUMMARIES_PDF_FILE_REPO,
+    DOCS_FILE_REPO,
+    PRDS_FILE_REPO,
+    REQUIREMENT_FILENAME,
     SYSTEM_DESIGN_FILE_REPO,
     TASK_FILE_REPO,
 )
 from metagpt.logs import logger
 from metagpt.roles import Role
 from metagpt.schema import (
+    CodePlanAndChangeContext,
     CodeSummarizeContext,
     CodingContext,
     Document,
     Documents,
     Message,
 )
-from metagpt.utils.common import any_to_str, any_to_str_set
+from metagpt.utils.common import any_to_name, any_to_str, any_to_str_set
+from metagpt.utils.file_repository import FileRepository
 
 IS_PASS_PROMPT = """
 {context}
@@ -78,20 +89,24 @@ class Engineer(Role):
     n_borg: int = 1
     use_code_review: bool = False
     code_todos: list = []
-    summarize_todos = []
+    summarize_todos: list = []
+    next_todo_action: str = ""
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
         self._init_actions([WriteCode])
-        self._watch([WriteTasks, SummarizeCode, WriteCode, WriteCodeReview, FixBug])
+        self._watch([WriteTasks, SummarizeCode, WriteCode, WriteCodeReview, FixBug, WriteCodePlanAndChange])
+        self.code_todos = []
+        self.summarize_todos = []
+        self.next_todo_action = any_to_name(WriteCode)
 
     @staticmethod
     def _parse_tasks(task_msg: Document) -> list[str]:
         m = json.loads(task_msg.content)
-        return m.get("Task list")
+        return m.get(TASK_LIST.key) or m.get(REFINED_TASK_LIST.key)
 
-    async def _act_sp_with_cr(self, review=False) -> Set[str]:
+    async def _act_sp_with_cr(self, review=False, mode: Literal["normal", "incremental"] = "normal") -> Set[str]:
         changed_files = set()
         src_file_repo = CONFIG.git_repo.new_file_repository(CONFIG.src_workspace)
         for todo in self.code_todos:
@@ -105,18 +120,25 @@ class Engineer(Role):
             coding_context = await todo.run()
             # Code review
             if review:
-                action = WriteCodeReview(context=coding_context, llm=self._llm)
+                action = WriteCodeReview(context=coding_context, llm=self.llm)
                 self._init_action_system_message(action)
                 coding_context = await action.run()
+
+            dependencies = {coding_context.design_doc.root_relative_path, coding_context.task_doc.root_relative_path}
+            if mode == "incremental":
+                dependencies.add(os.path.join(CODE_PLAN_AND_CHANGE_FILE_REPO, CODE_PLAN_AND_CHANGE_FILENAME))
             await src_file_repo.save(
                 coding_context.filename,
-                dependencies={coding_context.design_doc.root_relative_path, coding_context.task_doc.root_relative_path},
+                dependencies=dependencies,
                 content=coding_context.code_doc.content,
             )
             msg = Message(
-                content=coding_context.json(), instruct_content=coding_context, role=self.profile, cause_by=WriteCode
+                content=coding_context.model_dump_json(),
+                instruct_content=coding_context,
+                role=self.profile,
+                cause_by=WriteCode,
             )
-            self._rc.memory.add(msg)
+            self.rc.memory.add(msg)
 
             changed_files.add(coding_context.code_doc.filename)
         if not changed_files:
@@ -125,11 +147,16 @@ class Engineer(Role):
 
     async def _act(self) -> Message | None:
         """Determines the mode of action based on whether code review is used."""
-        if self._rc.todo is None:
+        if self.rc.todo is None:
             return None
-        if isinstance(self._rc.todo, WriteCode):
+        if isinstance(self.rc.todo, WriteCodePlanAndChange):
+            self.next_todo_action = any_to_name(WriteCode)
+            return await self._act_code_plan_and_change()
+        if isinstance(self.rc.todo, WriteCode):
+            self.next_todo_action = any_to_name(SummarizeCode)
             return await self._act_write_code()
-        if isinstance(self._rc.todo, SummarizeCode):
+        if isinstance(self.rc.todo, SummarizeCode):
+            self.next_todo_action = any_to_name(WriteCode)
             return await self._act_summarize()
         return None
 
@@ -164,7 +191,7 @@ class Engineer(Role):
                 tasks.append(todo.context.dict())
                 await code_summaries_file_repo.save(
                     filename=Path(todo.context.design_filename).name,
-                    content=todo.context.json(),
+                    content=todo.context.model_dump_json(),
                     dependencies=dependencies,
                 )
             else:
@@ -186,8 +213,41 @@ class Engineer(Role):
             content=json.dumps(tasks), role=self.profile, cause_by=SummarizeCode, send_to=self, sent_from=self
         )
 
+    async def _act_code_plan_and_change(self):
+        """Write code plan and change that guides subsequent WriteCode and WriteCodeReview"""
+        logger.info("Writing code plan and change..")
+        code_plan_and_change_file_repo = CONFIG.git_repo.new_file_repository(CODE_PLAN_AND_CHANGE_FILE_REPO)
+        code_plan_and_change_pdf_file_repo = CONFIG.git_repo.new_file_repository(CODE_PLAN_AND_CHANGE_PDF_FILE_REPO)
+
+        node = await self.rc.todo.run()
+        code_plan_and_change = node.instruct_content.model_dump_json()
+        dependencies = {
+            self.rc.todo.context.requirement_doc.filename,
+            self.rc.todo.context.prd_docs[0].filename,
+            self.rc.todo.context.design_docs[0].filename,
+            self.rc.todo.context.tasks_docs[0].filename,
+        }
+
+        code_plan_and_change_filename = os.path.join(CODE_PLAN_AND_CHANGE_FILE_REPO, CODE_PLAN_AND_CHANGE_FILENAME)
+        await code_plan_and_change_file_repo.save(
+            filename=code_plan_and_change_filename, content=code_plan_and_change, dependencies=dependencies
+        )
+        await code_plan_and_change_pdf_file_repo.save(
+            filename=Path(code_plan_and_change_filename).with_suffix(".md").name,
+            content=node.content,
+            dependencies=dependencies,
+        )
+
+        return Message(
+            content=code_plan_and_change,
+            role=self.profile,
+            cause_by=WriteCodePlanAndChange,
+            send_to=self,
+            sent_from=self,
+        )
+
     async def _is_pass(self, summary) -> (str, str):
-        rsp = await self._llm.aask(msg=IS_PASS_PROMPT.format(context=summary), stream=False)
+        rsp = await self.llm.aask(msg=IS_PASS_PROMPT.format(context=summary), stream=False)
         logger.info(rsp)
         if "YES" in rsp:
             return True, rsp
@@ -196,19 +256,24 @@ class Engineer(Role):
     async def _think(self) -> Action | None:
         if not CONFIG.src_workspace:
             CONFIG.src_workspace = CONFIG.git_repo.workdir / CONFIG.git_repo.workdir.name
-        write_code_filters = any_to_str_set([WriteTasks, SummarizeCode, FixBug])
+        write_plan_and_change_filters = any_to_str_set([WriteTasks])
+        write_code_filters = any_to_str_set([WriteTasks, WriteCodePlanAndChange, SummarizeCode, FixBug])
         summarize_code_filters = any_to_str_set([WriteCode, WriteCodeReview])
-        if not self._rc.news:
+        if not self.rc.news:
             return None
-        msg = self._rc.news[0]
+        msg = self.rc.news[0]
+        if CONFIG.inc and msg.cause_by in write_plan_and_change_filters:
+            logger.debug(f"TODO WriteCodePlanAndChange:{msg.model_dump_json()}")
+            await self._new_code_plan_and_change_action()
+            return self.rc.todo
         if msg.cause_by in write_code_filters:
-            logger.debug(f"TODO WriteCode:{msg.json()}")
+            logger.debug(f"TODO WriteCode:{msg.model_dump_json()}")
             await self._new_code_actions(bug_fix=msg.cause_by == any_to_str(FixBug))
-            return self._rc.todo
+            return self.rc.todo
         if msg.cause_by in summarize_code_filters and msg.sent_from == any_to_str(self):
-            logger.debug(f"TODO SummarizeCode:{msg.json()}")
+            logger.debug(f"TODO SummarizeCode:{msg.model_dump_json()}")
             await self._new_summarize_actions()
-            return self._rc.todo
+            return self.rc.todo
         return None
 
     @staticmethod
@@ -226,7 +291,9 @@ class Engineer(Role):
                 task_doc = await task_file_repo.get(i.name)
             elif str(i.parent) == SYSTEM_DESIGN_FILE_REPO:
                 design_doc = await design_file_repo.get(i.name)
-        # FIXME: design doc没有加载进来，是None
+        if not task_doc or not design_doc:
+            logger.error(f'Detected source code "{filename}" from an unknown origin.')
+            raise ValueError(f'Detected source code "{filename}" from an unknown origin.')
         context = CodingContext(filename=filename, design_doc=design_doc, task_doc=task_doc, code_doc=old_code_doc)
         return context
 
@@ -235,7 +302,9 @@ class Engineer(Role):
         context = await Engineer._new_coding_context(
             filename, src_file_repo, task_file_repo, design_file_repo, dependency
         )
-        coding_doc = Document(root_path=str(src_file_repo.root_path), filename=filename, content=context.json())
+        coding_doc = Document(
+            root_path=str(src_file_repo.root_path), filename=filename, content=context.model_dump_json()
+        )
         return coding_doc
 
     async def _new_code_actions(self, bug_fix=False):
@@ -260,15 +329,15 @@ class Engineer(Role):
                     filename=task_filename, design_doc=design_doc, task_doc=task_doc, code_doc=old_code_doc
                 )
                 coding_doc = Document(
-                    root_path=str(src_file_repo.root_path), filename=task_filename, content=context.json()
+                    root_path=str(src_file_repo.root_path), filename=task_filename, content=context.model_dump_json()
                 )
                 if task_filename in changed_files.docs:
                     logger.warning(
-                        f"Log to expose potential conflicts: {coding_doc.json()} & "
-                        f"{changed_files.docs[task_filename].json()}"
+                        f"Log to expose potential conflicts: {coding_doc.model_dump_json()} & "
+                        f"{changed_files.docs[task_filename].model_dump_json()}"
                     )
                 changed_files.docs[task_filename] = coding_doc
-        self.code_todos = [WriteCode(context=i, llm=self._llm) for i in changed_files.docs.values()]
+        self.code_todos = [WriteCode(context=i, llm=self.llm) for i in changed_files.docs.values()]
         # Code directly modified by the user.
         dependency = await CONFIG.git_repo.get_dependency()
         for filename in changed_src_files:
@@ -282,10 +351,10 @@ class Engineer(Role):
                 dependency=dependency,
             )
             changed_files.docs[filename] = coding_doc
-            self.code_todos.append(WriteCode(context=coding_doc, llm=self._llm))
+            self.code_todos.append(WriteCode(context=coding_doc, llm=self.llm))
 
         if self.code_todos:
-            self._rc.todo = self.code_todos[0]
+            self.rc.todo = self.code_todos[0]
 
     async def _new_summarize_actions(self):
         src_file_repo = CONFIG.git_repo.new_file_repository(CONFIG.src_workspace)
@@ -298,6 +367,26 @@ class Engineer(Role):
             summarizations[ctx].append(filename)
         for ctx, filenames in summarizations.items():
             ctx.codes_filenames = filenames
-            self.summarize_todos.append(SummarizeCode(context=ctx, llm=self._llm))
+            self.summarize_todos.append(SummarizeCode(context=ctx, llm=self.llm))
         if self.summarize_todos:
-            self._rc.todo = self.summarize_todos[0]
+            self.rc.todo = self.summarize_todos[0]
+
+    async def _new_code_plan_and_change_action(self):
+        """Create a WriteCodePlanAndChange action for subsequent to-do actions."""
+        requirement_doc = await FileRepository.get_file(filename=REQUIREMENT_FILENAME, relative_path=DOCS_FILE_REPO)
+        prd_docs = await FileRepository.get_all_files(relative_path=PRDS_FILE_REPO)
+        design_docs = await FileRepository.get_all_files(relative_path=SYSTEM_DESIGN_FILE_REPO)
+        tasks_docs = await FileRepository.get_all_files(relative_path=TASK_FILE_REPO)
+
+        code_plan_and_change_context = CodePlanAndChangeContext(
+            requirement_doc=requirement_doc,
+            prd_docs=prd_docs,
+            design_docs=design_docs,
+            tasks_docs=tasks_docs,
+        )
+        self.rc.todo = WriteCodePlanAndChange(context=code_plan_and_change_context, llm=self.llm)
+
+    @property
+    def todo(self) -> str:
+        """AgentStore uses this attribute to display to the user what actions the current role should take."""
+        return self.next_todo_action
